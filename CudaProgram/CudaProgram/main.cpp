@@ -1,16 +1,5 @@
 ﻿#include "main.h"
 
-// macros to replace <<<>>> to avoid Visual Studio IDE error
-#ifndef __INTELLISENSE__
-#define KERNEL_ARGS2(grid, block)                 <<< grid, block >>>
-#define KERNEL_ARGS3(grid, block, sh_mem)         <<< grid, block, sh_mem >>>
-#define KERNEL_ARGS4(grid, block, sh_mem, stream) <<< grid, block, sh_mem, stream >>>
-#else
-#define KERNEL_ARGS2(grid, block)
-#define KERNEL_ARGS3(grid, block, sh_mem)
-#define KERNEL_ARGS4(grid, block, sh_mem, stream)
-#endif
-
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
     int i = threadIdx.x;
@@ -54,6 +43,32 @@ int main()
 
 //TODO fill out this function
 float* generateRandomNumbers(int n, unsigned int seed) {
+    float* h_RandGPU;
+    float* d_Rand;
+
+    cudaStream_t stream;
+    curandGenerator_t prngGPU;
+
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+
+    cudaMalloc((void**)&d_Rand, n * sizeof(float));
+
+    printf("Seeding rng with %i ...\n", seed);
+
+    /*curandCreateGenerator(&prngGPU, CURAND_RNG_PSEUDO_MTGP32);
+    curandSetStream(prngGPU, stream);
+    curandSetPseudoRandomGeneratorSeed(prngGPU, seed);
+
+    cudaMallocHost(&h_RandGPU, n * sizeof(float));
+
+    printf("Generating random numbers on GPU...\n");
+    curandGenerateUniform(prngGPU, (float*)d_Rand, n);
+
+    printf("\nReading back the results...\n");
+    cudaMemcpyAsync(h_RandGPU, d_Rand, n * sizeof(float),
+        cudaMemcpyDeviceToHost, stream);*/
+
+
     float* nums = 0;
     return nums;
 }
@@ -106,7 +121,7 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     }
 
     // Launch a kernel on the GPU with one thread for each element.
-    addKernel KERNEL_ARGS2(1, size)(dev_c, dev_a, dev_b);
+    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
 
     // Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();

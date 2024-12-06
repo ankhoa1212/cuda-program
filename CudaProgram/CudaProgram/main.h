@@ -1,7 +1,6 @@
 #pragma once
 
-// for error checking and testing
-#include "cuda_runtime.h"
+// for testing
 #include "device_launch_parameters.h"
 
 // utility and system includes
@@ -10,6 +9,7 @@
 #include <string.h>
 
 #include <curand.h>
+#include "cuda_runtime.h"
 
 // function definitions
 __global__ void addKernel(int* c, const int* a, const int* b);
