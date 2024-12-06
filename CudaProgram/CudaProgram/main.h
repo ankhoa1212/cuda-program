@@ -11,6 +11,7 @@
 
 #include <curand.h>
 
+// function definitions
 __global__ void addKernel(int* c, const int* a, const int* b);
 cudaError_t addWithCuda(int* c, const int* a, const int* b, unsigned int size);
 float* generateRandomNumbers(int n, unsigned int seed);
