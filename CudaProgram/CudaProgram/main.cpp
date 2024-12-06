@@ -1,6 +1,6 @@
 ﻿#include "main.h"
 
-// macro to replace <<<>>> to avoid visual studio error
+// macros to replace <<<>>> to avoid visual studio error
 #ifndef __INTELLISENSE__
 #define KERNEL_ARGS2(grid, block)                 <<< grid, block >>>
 #define KERNEL_ARGS3(grid, block, sh_mem)         <<< grid, block, sh_mem >>>
