@@ -9,3 +9,5 @@
 *.ptx
 *.cubin
 *.fatbin
+
+*.user
