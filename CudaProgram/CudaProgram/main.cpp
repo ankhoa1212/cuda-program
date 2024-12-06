@@ -1,4 +1,6 @@
-﻿// macro to replace <<<>>> to avoid visual studio error
+﻿#include "main.h"
+
+// macro to replace <<<>>> to avoid visual studio error
 #ifndef __INTELLISENSE__
 #define KERNEL_ARGS2(grid, block)                 <<< grid, block >>>
 #define KERNEL_ARGS3(grid, block, sh_mem)         <<< grid, block, sh_mem >>>
@@ -8,8 +10,6 @@
 #define KERNEL_ARGS3(grid, block, sh_mem)
 #define KERNEL_ARGS4(grid, block, sh_mem, stream)
 #endif
-
-#include "main.h"
 
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
