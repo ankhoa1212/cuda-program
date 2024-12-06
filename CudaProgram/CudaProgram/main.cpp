@@ -1,4 +1,15 @@
-﻿#include "main.h"
+﻿// macro to replace <<<>>> to avoid visual studio error
+#ifndef __INTELLISENSE__
+#define KERNEL_ARGS2(grid, block)                 <<< grid, block >>>
+#define KERNEL_ARGS3(grid, block, sh_mem)         <<< grid, block, sh_mem >>>
+#define KERNEL_ARGS4(grid, block, sh_mem, stream) <<< grid, block, sh_mem, stream >>>
+#else
+#define KERNEL_ARGS2(grid, block)
+#define KERNEL_ARGS3(grid, block, sh_mem)
+#define KERNEL_ARGS4(grid, block, sh_mem, stream)
+#endif
+
+#include "main.h"
 
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
@@ -6,8 +17,15 @@ __global__ void addKernel(int *c, const int *a, const int *b)
     c[i] = a[i] + b[i];
 }
 
+// default number of random numbers to generate
+const int DEFAULT_RANDOM_NUMBERS = 2560000;
+// default seed for random number generator
+const unsigned int DEFAULT_SEED = 123;
+
 int main()
 {
+    generateRandomNumbers(DEFAULT_RANDOM_NUMBERS, DEFAULT_SEED);
+
     const int arraySize = 5;
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 10, 20, 30, 40, 50 };
@@ -32,6 +50,12 @@ int main()
     }
 
     return 0;
+}
+
+//TODO fill out this function
+float* generateRandomNumbers(int n, unsigned int seed) {
+    float* nums = 0;
+    return nums;
 }
 
 // Helper function for using CUDA to add vectors in parallel.
@@ -82,7 +106,7 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
     }
 
     // Launch a kernel on the GPU with one thread for each element.
-    addKernel<<<1, size>>>(dev_c, dev_a, dev_b);
+    addKernel KERNEL_ARGS2(1, size)(dev_c, dev_a, dev_b);
 
     // Check for any errors launching the kernel
     cudaStatus = cudaGetLastError();
