@@ -1,19 +1,20 @@
 ﻿#pragma once
 
-// for testing
+// CUDA launch params
 #include "device_launch_parameters.h"
 
-// utility and system includes
+// utility and system
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <iostream>
 
+// CUDA libs
 #include <cuda_runtime.h>
 #include <curand.h>
 
 // function definitions
+int addVectors();
 cudaError_t addWithCuda(int* c, const int* a, const int* b, unsigned int size);
 float* generateRandomNumbers(int n, unsigned int seed);
 
@@ -25,13 +26,54 @@ __global__ void addKernel(int* c, const int* a, const int* b)
 
 // default number of random numbers to generate
 const int DEFAULT_RANDOM_NUMBERS = 2560000;
+
 // default seed for random number generator
 const unsigned int DEFAULT_SEED = 123;
 
+// main function
 int main()
 {
     generateRandomNumbers(DEFAULT_RANDOM_NUMBERS, DEFAULT_SEED);
 
+    // TODO generate visualization of number generation
+    // maybe with image generation or image matching
+
+    return 0;
+}
+
+// random number generator function
+float* generateRandomNumbers(int n, unsigned int seed) {
+    // create async stream for computation
+    cudaStream_t stream;
+    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+
+    // allocate space on GPU
+    float* d_Rand;
+    cudaMalloc((void**)&d_Rand, n * sizeof(float));
+
+    printf("Seeding rng with %i ...\n", seed);
+    curandGenerator_t prngGPU;
+    curandCreateGenerator(&prngGPU, CURAND_RNG_PSEUDO_MTGP32);
+    curandSetStream(prngGPU, stream);
+    curandSetPseudoRandomGeneratorSeed(prngGPU, seed);
+    
+    // allocate space for results
+    float* h_RandGPU;
+    cudaMallocHost(&h_RandGPU, n * sizeof(float));
+
+    printf("Generating random numbers on GPU...\n");
+    curandGenerateUniform(prngGPU, (float*)d_Rand, n);
+    
+    printf("Reading back the results...\n");
+    cudaMemcpyAsync(h_RandGPU, d_Rand, n * sizeof(float),
+        cudaMemcpyDeviceToHost, stream);
+
+    return h_RandGPU;
+}
+
+// default starter function
+int addVectors()
+{
     const int arraySize = 5;
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 10, 20, 30, 40, 50 };
@@ -54,46 +96,11 @@ int main()
         fprintf(stderr, "cudaDeviceReset failed!");
         return 1;
     }
-
+    
     return 0;
 }
 
-//TODO fill out this function
-float* generateRandomNumbers(int n, unsigned int seed) {
-    float* h_RandGPU;
-    float* d_Rand;
-
-    cudaStream_t stream;
-    curandGenerator_t prngGPU;
-
-    cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
-
-    cudaMalloc((void**)&d_Rand, n * sizeof(float));
-
-    printf("Seeding rng with %i ...\n", seed);
-
-    curandCreateGenerator(&prngGPU, CURAND_RNG_PSEUDO_MTGP32);
-    curandSetStream(prngGPU, stream);
-    curandSetPseudoRandomGeneratorSeed(prngGPU, seed);
-    
-    cudaMallocHost(&h_RandGPU, n * sizeof(float));
-
-    printf("Generating random numbers on GPU...\n");
-    curandGenerateUniform(prngGPU, (float*)d_Rand, n);
-    
-    printf("Reading back the results...\n");
-    cudaMemcpyAsync(h_RandGPU, d_Rand, n * sizeof(float),
-        cudaMemcpyDeviceToHost, stream);
-
-    //for (int i = 0; i < n; i++) {
-    //    std::cout << *(h_RandGPU + i) << std::endl;
-    //}
-    //printf("%f", h_RandGPU);
-
-    return h_RandGPU;
-}
-
-// Helper function for using CUDA to add vectors in parallel.
+// helper function for using CUDA to add vectors in parallel
 cudaError_t addWithCuda(int* c, const int* a, const int* b, unsigned int size)
 {
     int* dev_a = 0;
