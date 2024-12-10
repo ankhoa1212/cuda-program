@@ -24,8 +24,29 @@ __global__ void addKernel(int* c, const int* a, const int* b)
     c[i] = a[i] + b[i];
 }
 
+__global__ void reduce(float* input_data, float* output_data) {
+    extern __shared__ float shared_data[];
+
+    // each thread loads one element from global to shared mem
+    unsigned int tid = threadIdx.x;
+    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    shared_data[tid] = input_data[i];
+    __syncthreads();
+
+    // do reduction in shared mem
+    for (unsigned int s = 1; s < blockDim.x; s *= 2) {
+        if (tid % (2 * s) == 0) {
+            shared_data[tid] += shared_data[tid + s];
+        }
+        __syncthreads();
+    }
+
+    // write result for this block to global mem
+    if (tid == 0) output_data[blockIdx.x] = shared_data[0];
+}
+
 // default number of random numbers to generate
-const int DEFAULT_RANDOM_NUMBERS = 2560000;
+const int DEFAULT_RANDOM_NUMBERS = 4;
 
 // default seed for random number generator
 const unsigned int DEFAULT_SEED = 123;
@@ -33,11 +54,29 @@ const unsigned int DEFAULT_SEED = 123;
 // main function
 int main()
 {
-    generateRandomNumbers(DEFAULT_RANDOM_NUMBERS, DEFAULT_SEED);
+    float* arr = new float[DEFAULT_RANDOM_NUMBERS];
+    arr = generateRandomNumbers(DEFAULT_RANDOM_NUMBERS, DEFAULT_SEED);
 
-    // TODO generate visualization of number generation
-    // maybe with image generation or image matching
+    for (int i = 0; i < DEFAULT_RANDOM_NUMBERS; i++) {
+        std::cout << "arr[" << i << "] = " << arr[i] << std::endl;
+    }
 
+    int blocks = 1;
+    int threads = 256;
+
+    printf("\nLaunching CUDA kernel with %i blocks and %i threads...\n", blocks, threads);
+    reduce <<<blocks, threads>>> (arr, arr);
+    
+    cudaDeviceSynchronize();  // Wait for GPU to finish
+
+    // TODO generate visualization of number generation as image
+    // maybe add perlin noise generation
+
+    for (int i = 0; i < DEFAULT_RANDOM_NUMBERS; i++) {
+        std::cout << "arr[" << i << "] = " << arr[i] << std::endl;
+    }
+
+    printf("\nExiting main...");
     return 0;
 }
 
@@ -61,10 +100,10 @@ float* generateRandomNumbers(int n, unsigned int seed) {
     float* h_RandGPU;
     cudaMallocHost(&h_RandGPU, n * sizeof(float));
 
-    printf("Generating random numbers on GPU...\n");
+    printf("Generating %i random numbers on GPU...\n", DEFAULT_RANDOM_NUMBERS);
     curandGenerateUniform(prngGPU, (float*)d_Rand, n);
     
-    printf("Reading back the results...\n");
+    printf("Reading back the results...\n\n");
     cudaMemcpyAsync(h_RandGPU, d_Rand, n * sizeof(float),
         cudaMemcpyDeviceToHost, stream);
 
