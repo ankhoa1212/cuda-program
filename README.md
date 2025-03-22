@@ -1,5 +1,7 @@
 # cuda-program
 
+- uses CUDA version 12.5
+
 # resources
 
 Links to some of the resources that I used / was inspired by:
